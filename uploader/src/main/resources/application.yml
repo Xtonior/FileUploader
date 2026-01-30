@@ -1,0 +1,14 @@
+server:
+  port: 8081
+
+spring:
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+
+minio:
+  accesKey: ${MINIO_ROOT_USER:myadmin}
+  secretKey: ${MINIO_ROOT_PASSWORD:myverysecretpassword}
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  bucket: ${MINIO_BUCKET:s3-storage}

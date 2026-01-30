@@ -1,0 +1,11 @@
+<groupId>kz.lab</groupId>
+<artifactId>microservices-parent</artifactId>
+<version>1.0.0</version>
+<packaging>pom</packaging>
+
+<modules>
+    <module>common</module>
+    <module>product</module>
+    <module>delivery</module>
+    <module>report</module>
+</modules>
