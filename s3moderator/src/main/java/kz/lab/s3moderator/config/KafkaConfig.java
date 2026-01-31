@@ -1,4 +1,4 @@
-package kz.lab.dbapp.config;
+package kz.lab.s3moderator.config;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,13 +39,13 @@ public class KafkaConfig {
     private Map<String, Object> consumerProps() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "db-group");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "s3mod-group");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JacksonJsonDeserializer.class);
 
-        props.put("spring.json.trusted.packages", "kz.lab.dbapp.*");
-        props.put(JacksonJsonDeserializer.TYPE_MAPPINGS, "fileLoadEntity:kz.lab.dbapp.entity.FileLoadEntity");
+        props.put("spring.json.trusted.packages", "kz.lab.s3moderator.*");
+        props.put(JacksonJsonDeserializer.TYPE_MAPPINGS, "fileLoadEntity:kz.lab.s3moderator.model.FileLoadEntity");
 
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         return props;
@@ -63,8 +63,8 @@ public class KafkaConfig {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JacksonJsonSerializer.class);
         props.put(JacksonJsonSerializer.ADD_TYPE_INFO_HEADERS, true);
-        props.put(JacksonJsonSerializer.TYPE_MAPPINGS, "fileLoadEntity:kz.lab.dbapp.entity.FileLoadEntity");
-        
+        props.put(JacksonJsonSerializer.TYPE_MAPPINGS, "fileLoadEntity:kz.lab.s3moderator.model.FileLoadEntity");
+
         return props;
     }
 

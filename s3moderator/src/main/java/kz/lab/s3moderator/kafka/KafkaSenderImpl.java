@@ -1,4 +1,4 @@
-package kz.lab.dbapp.kafka;
+package kz.lab.s3moderator.kafka;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -6,7 +6,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
-import kz.lab.dbapp.exception.KafkaException;
+import kz.lab.s3moderator.exception.KafkaException;
 
 @Component
 public class KafkaSenderImpl {

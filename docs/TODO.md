@@ -12,6 +12,7 @@
 - CQRS
 
 - S3Service.store проверить на null
+- Перепроверить все application.yml на соответствие топиков, убрать лишние
 
 # полировка
 - Service Registry

@@ -23,5 +23,6 @@ services:
       mc alias set myminio http://minio:9000 myadmin myverysecretpassword;
       mc mb --ignore-existing myminio/s3-storage;
       mc anonymous set public myminio/s3-storage;
+      mc event add myminio/s3-storage arn:minio:sqs:us-east-1:1:myqueue --event "s3:ObjectRemoved:*";
       exit 0;
       "
