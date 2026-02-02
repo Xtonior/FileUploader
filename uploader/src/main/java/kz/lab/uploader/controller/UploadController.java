@@ -1,6 +1,7 @@
 package kz.lab.uploader.controller;
 
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -41,10 +43,10 @@ public class UploadController {
     }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public Mono<String> handleFileUpload(@RequestPart("file") FilePart file) throws StorageException {
+    public Mono<String> handleFileUpload(@RequestPart("file") FilePart file, @RequestParam UUID userUuid) throws StorageException {
         return storageService.store(file)
                 .doOnSuccess(path -> {
-                    s3Service.store(path, s3AsyncClient, bucket)
+                    s3Service.store(path, s3AsyncClient, userUuid, bucket)
                             .subscribe(
                                     unused -> System.out.println("Uploaded to S3: " + path.getFileName()),
                                     err -> System.err.println("S3 upload failed: " + err.getMessage()));

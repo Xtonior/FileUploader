@@ -1,0 +1,12 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: file-uploader-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminsecret
+      POSTGRES_DB: file_uploader_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql

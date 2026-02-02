@@ -8,3 +8,9 @@ kafka:
     db-update-events: db-update-events-topic
     sample-events: sample-events-topic
   bootstrap-server: "localhost:9094"
+
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/file_uploader_db
+    username: admin
+    password: adminsecret

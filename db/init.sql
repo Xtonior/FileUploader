@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS file_records;
+
+CREATE TABLE file_records (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    link TEXT NOT NULL,
+    user_guid UUID NOT NULL,
+    upload_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
