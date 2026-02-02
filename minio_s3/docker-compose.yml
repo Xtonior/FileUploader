@@ -1,28 +1,44 @@
 services:
   minio:
-    build: .
+    image: minio/minio:latest
+    container_name: minio
+    networks:
+      - file_uploader_network
     ports:
       - "9000:9000"
       - "9001:9001"
+    command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: myadmin
       MINIO_ROOT_PASSWORD: myverysecretpassword
+      MINIO_NOTIFY_KAFKA_ENABLE_target1: "on"
+      MINIO_NOTIFY_KAFKA_BROKERS_target1: "kafka:9092"
+      MINIO_NOTIFY_KAFKA_TOPIC_target1: "s3-load-events-topic"
+      MINIO_NOTIFY_KAFKA_ENABLE_target2: "on"
+      MINIO_NOTIFY_KAFKA_BROKERS_target2: "kafka:9092"
+      MINIO_NOTIFY_KAFKA_TOPIC_target2: "s3-delete-events-topic"
     healthcheck:
-      test: ["CMD", "/usr/bin/mc", "ready", "local"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   minio-init:
     image: minio/mc
+    networks:
+      - file_uploader_network
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
+      sleep 5;
       mc alias set myminio http://minio:9000 myadmin myverysecretpassword;
       mc mb --ignore-existing myminio/s3-storage;
-      mc anonymous set public myminio/s3-storage;
-      mc event add myminio/s3-storage arn:minio:sqs:us-east-1:1:myqueue --event "s3:ObjectRemoved:*";
-      exit 0;
-      "
+      mc event add myminio/s3-storage arn:minio:sqs::target1:kafka --event put;
+      mc event add myminio/s3-storage arn:minio:sqs::target2:kafka --event delete;
+      mc event list myminio/s3-storage;"
+
+networks:
+  file_uploader_network:
+    external: true

@@ -3,8 +3,8 @@ server:
 
 kafka:
   topics:
-    new-load-events: new-load-events-topic
     s3-load-events: s3-load-events-topic
-    s3-load-notfnd-events: s3-load-notfnd-events-topic
+    s3-delete-events: s3-delete-events-topic
     db-update-events: db-update-events-topic
     sample-events: sample-events-topic
+  bootstrap-server: "localhost:9094"
