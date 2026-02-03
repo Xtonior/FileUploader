@@ -1,0 +1,1 @@
+./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-XX:NativeMemoryTracking=summary -Dio.netty.leakDetection.level=PARANOID -Xmx512m"

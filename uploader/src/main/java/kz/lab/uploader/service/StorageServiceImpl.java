@@ -1,28 +1,28 @@
 package kz.lab.uploader.service;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.Stream;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import kz.lab.uploader.config.StorageProperties;
 import kz.lab.uploader.exception.StorageException;
-import kz.lab.uploader.exception.StorageFileNotFoundException;
 import kz.lab.uploader.initerface.StorageService;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 @Service
+@Slf4j
 public class StorageServiceImpl implements StorageService {
 
     private final Path rootLocation;
+
+    private final Scheduler storageScheduler = Schedulers.newBoundedElastic(10, 100, "storage-pool");
 
     @Autowired
     public StorageServiceImpl(StorageProperties properties) throws StorageException {
@@ -44,22 +44,29 @@ public class StorageServiceImpl implements StorageService {
         }
     }
 
-    // add parted flag
     @Override
-    public Mono<Path> store(FilePart filePart) throws StorageException {
+    public Mono<Path> store(FilePart filePart, String userUuid) throws StorageException {
         return Mono.just(filePart)
+                .publishOn(storageScheduler)
                 .flatMap(file -> {
                     String fileName = file.filename();
 
-                    if (fileName.isEmpty()) {
+                    if (fileName == null || fileName.isEmpty()) {
                         return Mono.error(new StorageException("Empty file!"));
                     }
 
-                    Path dest = rootLocation.resolve(Paths.get(fileName))
-                            .normalize().toAbsolutePath();
+                    Path userDir = rootLocation.resolve(userUuid).normalize().toAbsolutePath();
 
-                    if (!dest.getParent().equals(rootLocation.toAbsolutePath())) {
-                        return Mono.error(new StorageException("Cannot store file outside of current directory!"));
+                    try {
+                        Files.createDirectories(userDir);
+                    } catch (IOException e) {
+                        return Mono.error(new StorageException("Failed to create user directory", e));
+                    }
+
+                    Path dest = userDir.resolve(fileName).normalize().toAbsolutePath();
+
+                    if (!dest.startsWith(rootLocation.toAbsolutePath())) {
+                        return Mono.error(new StorageException("Cannot store file outside of root directory!"));
                     }
 
                     return file.transferTo(dest)
@@ -73,37 +80,22 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public Stream<Path> loadAll() throws StorageException {
-        try {
-            return Files.walk(rootLocation, 1);
-        } catch (Exception e) {
-            throw new StorageException("Failed to read stored files", e);
-        }
+    public Mono<Void> deleteAsync(String filename, String userUuid) {
+        return Mono.fromRunnable(() -> {
+            try {
+                Path fileToDelete = rootLocation.resolve(userUuid).resolve(filename);
+                Files.deleteIfExists(fileToDelete);
+
+                Files.deleteIfExists(rootLocation.resolve(userUuid));
+            } catch (IOException e) {
+                log.error("Failed to delete file", e);
+            }
+        }).subscribeOn(Schedulers.boundedElastic()).then();
     }
 
     @Override
-    public Path load(String filename) {
-        return rootLocation.resolve(filename);
-    }
-
-    @Override
-    public Resource loadAsResource(String filename) throws StorageFileNotFoundException {
-        try {
-            Path file = load(filename);
-            Resource res = new UrlResource(file.toUri());
-
-            if (res.exists() || res.isReadable())
-                return res;
-            else
-                throw new StorageFileNotFoundException("Could not read file: " + filename);
-        } catch (MalformedURLException e) {
-            throw new StorageFileNotFoundException("Could not read file: " + filename, e);
-        }
-    }
-
-    @Override
-    public void delete(String filename) {
-        FileSystemUtils.deleteRecursively(rootLocation.resolve(filename).toFile());
+    public void delete(String filename, String userUuid) {
+        FileSystemUtils.deleteRecursively(rootLocation.resolve(userUuid).toFile());
     }
 
     @Override

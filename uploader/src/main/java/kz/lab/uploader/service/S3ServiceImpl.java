@@ -36,7 +36,7 @@ public class S3ServiceImpl implements S3Service {
                 .bucket(bucket)
                 .key(fullPath.toString())
                 .metadata(Map.of(
-                        "user-guid", "550e8400-e29b-41d4-a716-446655440000",
+                        "user-guid", userUuid.toString(),
                         "date", LocalDateTime.now().toString()))
                 .build();
 
