@@ -16,6 +16,8 @@ import kz.lab.dbapp.model.minio.MinioEvent;
 import kz.lab.dbapp.model.minio.MinioRecord;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -27,17 +29,25 @@ public class MinioNotificationListener {
     @KafkaListener(topics = "${kafka.topics.s3-load-events}", containerFactory = "kafkaListenerContainerFactory", groupId = "load-minio-listeners")
     public void handleUploads(ConsumerRecord<String, MinioEvent> record) throws KafkaException {
         MinioEvent event = record.value();
-        if (event.getRecords() != null && !event.getRecords().isEmpty()) {
-            for (MinioRecord rec : event.getRecords()) {
-                FileLoadEntity entity = ParseMinioEvent(rec);
-                fileService.create(entity)
-                        .subscribe(
-                                saved -> log.info("Successfully saved to DB: {}", saved.getName()),
-                                err -> log.error("DB Save Error: {}", err.getMessage()));
-            }
-        } else {
+
+        if (event.getRecords() == null || event.getRecords().isEmpty()) {
             throw new KafkaException("Failed to parse kafka message");
         }
+
+        Flux.fromIterable(event.getRecords())
+                .map(this::ParseMinioEvent)
+                .flatMap(entity -> checkDuplicate(entity)
+                        .flatMap(isDuplicate -> {
+                            if (isDuplicate) {
+                                log.info("Duplicate found for: {}", entity.getName());
+                                return Mono.empty();
+                            } else {
+                                return fileService.create(entity)
+                                        .doOnSuccess(saved -> log.info("Successfully saved: {}", saved.getName()));
+                            }
+                        }))
+                .collectList()
+                .block();
     }
 
     @KafkaListener(topics = "${kafka.topics.s3-delete-events}", containerFactory = "kafkaListenerContainerFactory", groupId = "delete-minio-listeners")
@@ -107,5 +117,11 @@ public class MinioNotificationListener {
         }
 
         return entity;
+    }
+
+    public Mono<Boolean> checkDuplicate(FileLoadEntity entity) {
+        return fileService.find(entity.getUserGuid(), entity.getUploadDate())
+                .map(ent -> true)
+                .defaultIfEmpty(false);
     }
 }

@@ -28,6 +28,10 @@ public class FileService {
         return fileRepository.deleteById(id);
     }
 
+    public Mono<FileLoadEntity> find(UUID userGuid, LocalDateTime loadDate) {
+        return fileRepository.findByIdAndDate(userGuid, loadDate);
+    }
+
     public Flux<FileLoadEntity> findAll() {
         return fileRepository.findAll();
     }
