@@ -29,7 +29,7 @@ public class FileService {
     }
 
     public Mono<FileLoadEntity> find(UUID userGuid, LocalDateTime loadDate) {
-        return fileRepository.findByIdAndDate(userGuid, loadDate);
+        return fileRepository.findByUserGuidAndUploadDate(userGuid, loadDate);
     }
 
     public Flux<FileLoadEntity> findAll() {

@@ -12,6 +12,6 @@ import reactor.core.publisher.Mono;
 
 @Repository
 public interface FileRepository extends ReactiveCrudRepository<FileLoadEntity, Long> {
-    Mono<FileLoadEntity> findByIdAndDate(UUID userGuid, LocalDateTime loadDate);
+    Mono<FileLoadEntity> findByUserGuidAndUploadDate(UUID userGuid, LocalDateTime loadDate);
     Mono<Void> deleteByUserGuidAndName(UUID userGuid, String name);
 }
