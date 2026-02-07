@@ -34,4 +34,4 @@ cd uploader
 1. Откройте jmeter/Uploader.jmx
 2. Подставьте файл в Add File -> File Uploads, Parameter Name: file 
 
-![fileloader.png]("/img/fileloader.png")
+![fileloader.png](https://github.com/Xtonior/FileUploader/blob/main/img/fileloader.png?raw=true)
