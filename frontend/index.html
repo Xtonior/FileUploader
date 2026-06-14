@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FileUploader</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3349;
+      --accent: #4f6ef7;
+      --accent-hover: #3d5ce0;
+      --danger: #e05252;
+      --danger-hover: #c43e3e;
+      --text: #e8eaf6;
+      --muted: #7b82a3;
+      --success: #4caf87;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ── AUTH ────────────────────────────────────────── */
+    #auth-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      width: 360px;
+    }
+
+    .auth-card h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .auth-card p {
+      color: var(--muted);
+      margin-bottom: 28px;
+      font-size: 13px;
+    }
+
+    .field { margin-bottom: 16px; }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus { border-color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .btn-primary { background: var(--accent); color: #fff; width: 100%; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: var(--danger-hover); }
+    .btn-ghost { background: var(--surface2); color: var(--text); }
+    .btn-ghost:hover { background: var(--border); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── APP ─────────────────────────────────────────── */
+    #app-screen { display: none; min-height: 100vh; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 14px 5px 5px;
+    }
+
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+    }
+
+    .user-name { font-size: 13px; }
+
+    .logout-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 18px; line-height: 1;
+      padding: 2px 0 2px 8px;
+      transition: color 0.15s;
+    }
+    .logout-btn:hover { color: var(--danger); }
+
+    main { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+    /* ── UPLOAD ZONE ─────────────────────────────────── */
+    .upload-section { margin-bottom: 40px; }
+    .section-title {
+      font-size: 16px; font-weight: 600; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title .icon { font-size: 18px; }
+
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 48px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(79, 110, 247, 0.04);
+    }
+
+    .drop-zone input[type=file] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .drop-icon { font-size: 40px; margin-bottom: 12px; }
+
+    .drop-zone h3 { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+    .drop-zone p { color: var(--muted); font-size: 12px; }
+
+    /* ── UPLOAD QUEUE ────────────────────────────────── */
+    #upload-queue { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+
+    .queue-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .queue-item .file-icon { font-size: 20px; flex-shrink: 0; }
+
+    .queue-item-info { flex: 1; min-width: 0; }
+    .queue-item-name {
+      font-size: 13px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .queue-item-size { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .progress-bar {
+      height: 3px; border-radius: 2px;
+      background: var(--border); margin-top: 6px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 2px; background: var(--accent);
+      transition: width 0.3s;
+    }
+
+    .status-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 8px;
+      border-radius: 999px; flex-shrink: 0;
+    }
+    .status-uploading { background: rgba(79,110,247,0.15); color: var(--accent); }
+    .status-done { background: rgba(76,175,135,0.15); color: var(--success); }
+    .status-error { background: rgba(224,82,82,0.15); color: var(--danger); }
+
+    /* ── FILES TABLE ─────────────────────────────────── */
+    .files-header {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 16px;
+    }
+
+    .refresh-btn {
+      background: none; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 6px 12px;
+      color: var(--muted); cursor: pointer; font-size: 12px;
+      display: flex; align-items: center; gap: 6px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .refresh-btn:hover { color: var(--text); border-color: var(--accent); }
+
+    .files-table {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+      text-align: left;
+      font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tr:hover td { background: var(--surface2); }
+
+    .file-name-cell {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .file-ext {
+      font-size: 10px; font-weight: 700;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 5px;
+      color: var(--muted); text-transform: uppercase;
+      flex-shrink: 0; min-width: 34px; text-align: center;
+    }
+
+    .uuid-cell {
+      font-family: monospace; font-size: 11px; color: var(--muted);
+      max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .date-cell { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+    .empty-state {
+      padding: 60px 32px; text-align: center;
+    }
+    .empty-state .empty-icon { font-size: 36px; margin-bottom: 12px; }
+    .empty-state p { color: var(--muted); font-size: 13px; }
+
+    /* ── TOAST ───────────────────────────────────────── */
+    #toast-container {
+      position: fixed; bottom: 24px; right: 24px;
+      display: flex; flex-direction: column; gap: 8px; z-index: 1000;
+    }
+
+    .toast {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 13px;
+      animation: slideIn 0.2s ease;
+      max-width: 320px;
+    }
+    .toast-success { border-left: 3px solid var(--success); }
+    .toast-error   { border-left: 3px solid var(--danger); }
+
+    @keyframes slideIn {
+      from { transform: translateX(20px); opacity: 0; }
+      to   { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ── SPINNER ─────────────────────────────────────── */
+    .spin {
+      display: inline-block;
+      animation: rotate 1s linear infinite;
+    }
+    @keyframes rotate { to { transform: rotate(360deg); } }
+
+    .loading-row td {
+      text-align: center; padding: 32px; color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <h1>FileUploader</h1>
+    <p>Введите имя пользователя чтобы войти</p>
+
+    <div class="field">
+      <label>Имя пользователя</label>
+      <input id="username-input" type="text" placeholder="Например: alex" autocomplete="off" />
+    </div>
+
+    <button class="btn btn-primary" id="login-btn">Войти</button>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen">
+  <header>
+    <div class="logo">File<span>Uploader</span></div>
+    <div class="user-pill">
+      <div class="avatar" id="user-avatar"></div>
+      <span class="user-name" id="user-display"></span>
+      <button class="logout-btn" id="logout-btn" title="Выйти">×</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- UPLOAD -->
+    <div class="upload-section">
+      <div class="section-title">
+        <span class="icon">⬆</span> Загрузить файл
+      </div>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" multiple />
+        <div class="drop-icon">📂</div>
+        <h3>Перетащите файлы или нажмите для выбора</h3>
+        <p>Поддерживаются любые типы файлов</p>
+      </div>
+      <div id="upload-queue"></div>
+    </div>
+
+    <!-- FILES -->
+    <div class="files-section">
+      <div class="files-header">
+        <div class="section-title" style="margin-bottom:0">
+          <span class="icon">📄</span> Все файлы
+        </div>
+        <button class="refresh-btn" id="refresh-btn">
+          <span id="refresh-icon">↻</span> Обновить
+        </button>
+      </div>
+      <div class="files-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Файл</th>
+              <th>Пользователь</th>
+              <th>Дата загрузки</th>
+              <th style="width:60px"></th>
+            </tr>
+          </thead>
+          <tbody id="files-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- TOASTS -->
+<div id="toast-container"></div>
+
+<script>
+  const UPLOADER_URL = 'http://localhost:8081';
+  const DBAPP_URL    = 'http://localhost:8089';
+
+  // ── STATE ──────────────────────────────────────────────
+  let currentUser = null;
+
+  // ── UTILS ──────────────────────────────────────────────
+  function uuidv4() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11)
+      .replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+  }
+
+  function formatBytes(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function formatDate(str) {
+    if (!str) return '—';
+    const d = new Date(str);
+    return d.toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric',
+      hour:'2-digit', minute:'2-digit' });
+  }
+
+  function getExt(name) {
+    const parts = name.split('.');
+    return parts.length > 1 ? parts.pop() : '?';
+  }
+
+  function fileIcon(name) {
+    const ext = getExt(name).toLowerCase();
+    const map = { pdf:'📕', png:'🖼', jpg:'🖼', jpeg:'🖼', gif:'🖼', webp:'🖼',
+      mp4:'🎬', mov:'🎬', avi:'🎬', mp3:'🎵', wav:'🎵',
+      zip:'📦', rar:'📦', '7z':'📦',
+      doc:'📝', docx:'📝', txt:'📝', csv:'📊', xlsx:'📊', json:'📋', xml:'📋' };
+    return map[ext] || '📄';
+  }
+
+  function toast(msg, type = 'success') {
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+
+  // ── AUTH ───────────────────────────────────────────────
+  function loadUser() {
+    const raw = localStorage.getItem('fu_user');
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function saveUser(name) {
+    const existing = loadUser();
+    const user = (existing && existing.name === name)
+      ? existing
+      : { name, uuid: uuidv4() };
+    localStorage.setItem('fu_user', JSON.stringify(user));
+    return user;
+  }
+
+  function showApp(user) {
+    currentUser = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('user-display').textContent = user.name;
+    document.getElementById('user-avatar').textContent = user.name[0].toUpperCase();
+    loadFiles();
+  }
+
+  function logout() {
+    localStorage.removeItem('fu_user');
+    currentUser = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('username-input').value = '';
+    document.getElementById('files-tbody').innerHTML = '';
+    document.getElementById('upload-queue').innerHTML = '';
+  }
+
+  document.getElementById('login-btn').onclick = () => {
+    const name = document.getElementById('username-input').value.trim();
+    if (!name) { toast('Введите имя пользователя', 'error'); return; }
+    showApp(saveUser(name));
+  };
+
+  document.getElementById('username-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('login-btn').click();
+  });
+
+  document.getElementById('logout-btn').onclick = logout;
+
+  // ── UPLOAD ─────────────────────────────────────────────
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    uploadFiles([...e.dataTransfer.files]);
+  });
+
+  fileInput.addEventListener('change', () => {
+    uploadFiles([...fileInput.files]);
+    fileInput.value = '';
+  });
+
+  function uploadFiles(files) {
+    files.forEach(file => uploadOne(file));
+  }
+
+  function uploadOne(file) {
+    const id = uuidv4();
+    const queue = document.getElementById('upload-queue');
+
+    const item = document.createElement('div');
+    item.className = 'queue-item';
+    item.id = 'qi-' + id;
+    item.innerHTML = `
+      <span class="file-icon">${fileIcon(file.name)}</span>
+      <div class="queue-item-info">
+        <div class="queue-item-name">${file.name}</div>
+        <div class="queue-item-size">${formatBytes(file.size)}</div>
+        <div class="progress-bar"><div class="progress-fill" id="pf-${id}" style="width:0%"></div></div>
+      </div>
+      <span class="status-badge status-uploading" id="sb-${id}">Загрузка</span>
+    `;
+    queue.appendChild(item);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${UPLOADER_URL}/upload?userUuid=${currentUser.uuid}`);
+
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) {
+        const pct = Math.round(e.loaded / e.total * 100);
+        document.getElementById('pf-' + id).style.width = pct + '%';
+      }
+    };
+
+    xhr.onload = () => {
+      const sb = document.getElementById('sb-' + id);
+      document.getElementById('pf-' + id).style.width = '100%';
+      if (xhr.status >= 200 && xhr.status < 300) {
+        sb.textContent = 'Готово';
+        sb.className = 'status-badge status-done';
+        toast(`${file.name} загружен`);
+        setTimeout(() => loadFiles(), 1200);
+        setTimeout(() => item.remove(), 4000);
+      } else {
+        sb.textContent = 'Ошибка';
+        sb.className = 'status-badge status-error';
+        toast(`Ошибка загрузки: ${file.name}`, 'error');
+      }
+    };
+
+    xhr.onerror = () => {
+      const sb = document.getElementById('sb-' + id);
+      sb.textContent = 'Ошибка';
+      sb.className = 'status-badge status-error';
+      toast('Нет соединения с сервером', 'error');
+    };
+
+    xhr.send(formData);
+  }
+
+  // ── FILES LIST ─────────────────────────────────────────
+  async function loadFiles() {
+    const tbody = document.getElementById('files-tbody');
+    const icon = document.getElementById('refresh-icon');
+    icon.className = 'spin';
+
+    tbody.innerHTML = `<tr class="loading-row"><td colspan="4">Загрузка…</td></tr>`;
+
+    try {
+      const res = await fetch(`${DBAPP_URL}/api/files`);
+      if (!res.ok) throw new Error(res.statusText);
+      const files = await res.json();
+
+      icon.className = '';
+      icon.textContent = '↻';
+
+      if (!files.length) {
+        tbody.innerHTML = `
+          <tr><td colspan="4">
+            <div class="empty-state">
+              <div class="empty-icon">📭</div>
+              <p>Файлов пока нет</p>
+            </div>
+          </td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = files.map(f => `
+        <tr>
+          <td>
+            <div class="file-name-cell">
+              <span>${fileIcon(f.name)}</span>
+              <span class="file-ext">${getExt(f.name)}</span>
+              <span>${f.name}</span>
+            </div>
+          </td>
+          <td><span class="uuid-cell" title="${f.userGuid}">${f.userGuid}</span></td>
+          <td><span class="date-cell">${formatDate(f.uploadDate)}</span></td>
+          <td>
+            <button class="btn btn-danger" style="padding:5px 10px;font-size:12px"
+              onclick="deleteFile(${f.id}, '${f.name}')">✕</button>
+          </td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      icon.className = '';
+      icon.textContent = '↻';
+      tbody.innerHTML = `<tr class="loading-row"><td colspan="4">Не удалось загрузить список файлов</td></tr>`;
+      toast('Ошибка соединения с dbapp', 'error');
+    }
+  }
+
+  async function deleteFile(id, name) {
+    if (!confirm(`Удалить "${name}"?`)) return;
+    try {
+      const res = await fetch(`${DBAPP_URL}/api/files/${id}`, { method: 'DELETE' });
+      if (res.ok || res.status === 204) {
+        toast(`"${name}" удалён из базы`);
+        loadFiles();
+      } else {
+        toast('Ошибка при удалении', 'error');
+      }
+    } catch {
+      toast('Нет соединения с сервером', 'error');
+    }
+  }
+
+  document.getElementById('refresh-btn').onclick = loadFiles;
+
+  // ── INIT ───────────────────────────────────────────────
+  const saved = loadUser();
+  if (saved) {
+    showApp(saved);
+  }
+</script>
+</body>
+</html>
